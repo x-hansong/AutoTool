@@ -25,6 +25,21 @@ function* next_token(input) {
     var token = [];
     while ((ch = gen.next()).done === false) {
         switch (ch.value) {
+            case '<':
+                token.push(ch.value);
+                var stack = [];
+                stack.push('<');
+                while(stack.length > 0) {
+                    var t = gen.next().value;
+                    if (t === '<') {
+                        stack.push('<');
+                    } else if(t === '>'){
+                        stack.pop()
+                    }
+                    token.push(t);
+                }
+                yield token.join('');
+                token.length = 0;
             case ' ':
             case '\t':
             case '\n':
@@ -121,11 +136,14 @@ function gen_class(source) {
         temp.type = t;
         temp.name = token.next().value;
         //跳过方法体
-        if (token.next().value === '(') {
+        t = token.next().value;
+        if (t === '(') {
             skipp();
             clazz.methods.push(temp);
         } else {
-            while (token.next().value != ';');
+            while (t != ';'){
+                t = token.next().value;
+            }
             clazz.properties.push(temp);
         }
     }
@@ -202,6 +220,58 @@ function mock(input) {
 
 }
 
+function go_getter(input) {
+    var struct = gen_struct(input);
+    var output = [];
+
+    struct.fields.forEach(function (e) {
+        output.push(`func (self *${struct.name}) ${e.name.upperFirst()}() ${e.type} {\n\treturn self.${e.name}\n}\n\n`)
+    })
+    return output.join('');
+}
+
+function gen_struct(input) {
+    var token = next_token(input)
+    var struct = {
+        name: "",
+        fields: []
+    }
+
+    function Field() {
+        this.type = '';
+        this.name = '';
+    }
+    while((t = token.next()).done === false) {
+        switch(t.value) {
+            case 'type':
+                struct.name = token.next().value
+                break;
+            case 'struct':
+                break;
+            case '{':
+                break;
+            case '}':
+                return struct;
+            default:
+                var tmp = new Field()
+                tmp.name = t.value
+                tmp.type = token.next().value
+                struct.fields.push(tmp)
+                break
+        }
+    }
+    return struct
+}
+function token(input) {
+    var gen = next_token(input);
+    var token = [];
+    var t;
+    while((t = gen.next()).done != true) {
+        token.push(t.value);
+    }
+    return token.join('\n');
+}
+
 btn.on('click', () => {
     var run = (process) => {
         out_ta.val(process(in_ta.val()));
@@ -215,6 +285,12 @@ btn.on('click', () => {
             break;
         case 'mock':
             run(mock);
+            break;
+        case 'token':
+            run(token);
+            break;
+        case 'go_getter':
+            run(go_getter);
             break;
     }
 });
