@@ -314,7 +314,7 @@ function gen_convertor(input_model, input_DO) {
 	output.push(`		${DO.name} ${DO.varName} = new ${DO.name}();\n\n`);
 	DO.properties.forEach(function(e) {
 		if(e.modifier.contains('private')) {
-			output.push(`    	${DO.varName}.set${e.name.upperFirst()}(${model.varName}.get${e.name.upperFirst()});\n`);
+			output.push(`    	${DO.varName}.set${e.name.upperFirst()}(${model.varName}.get${e.name.upperFirst()}());\n`);
 		}
 	});
 	output.push(`		return ${DO.varName};\n`);
